@@ -17,7 +17,7 @@ const client = new Client({
 })
 require('dotenv').config()
 
-const nftContract = '0x5d772b8de2a413e9ce66c1428386b3ad8de0b204'
+const nftContract = '0x06f70655d4AA5819E711563EB2383655449f24E9'
 const zilswapContract = '0xba11eb7bcc0a02e947acf03cc651bfaf19c9ec00'
 
 // POSTING
