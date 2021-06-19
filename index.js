@@ -115,6 +115,10 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
             amountTokensPerDollar
           )
 
+          const correctReserve = pool.tokenReserve.dividedBy(
+            10 ** Number(decimals)
+          )
+
           const embed = new Discord.MessageEmbed()
             .setColor('#F25B21')
             .setTitle(`${name} pool found!`)
@@ -127,7 +131,7 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
             )
             .addField(
               `${symbol} liquidity`,
-              `${pool.tokenReserve.toFixed()} ${symbol}`
+              `${correctReserve.toFixed()} ${symbol}`
             )
             .addField('Total supply', `${correctSupply} ${symbol}`)
             .addField(
