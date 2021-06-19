@@ -117,7 +117,7 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
 
           const embed = new Discord.MessageEmbed()
             .setColor('#F25B21')
-            .setTitle(`${name} pool found!`)
+            .setTitle(`${name} pool found! - Please Beware of Scam Contracts!!!!!`)
             .setDescription(`Contract: ${address}`)
             .addField(
               'Zilliqa liquidity',
