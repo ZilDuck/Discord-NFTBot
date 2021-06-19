@@ -8,8 +8,8 @@ const { Zilswap } = require('zilswap-sdk')
 const axios = require('axios')
 const BigNumber = require('bignumber.js')
 
-const zilliqa = new Zilliqa('https://dev-api.zilliqa.com')
-const zilswap = new Zilswap('TestNet')
+const zilliqa = new Zilliqa('https://api.zilliqa.com/')
+const zilswap = new Zilswap('MainNet')
 
 const usercache = new NodeCache()
 const client = new Client({
@@ -17,8 +17,8 @@ const client = new Client({
 })
 require('dotenv').config()
 
-const nftContract = '0xaf29454f58514498133233f3f2bce6dea26d8349'
-const zilswapContract = '0x1a62dd9c84b0c8948cb51fc664ba143e7a34985c'
+const nftContract = '0x5d772b8de2a413e9ce66c1428386b3ad8de0b204'
+const zilswapContract = '0xba11eb7bcc0a02e947acf03cc651bfaf19c9ec00'
 
 // POSTING
 client.on('message', msg => {
@@ -35,7 +35,7 @@ client.on('message', msg => {
 
     client.users.fetch(msg.author.id, false).then(user => {
       user.send(
-        `https://testingtheducks.com/discord-authenticate/${msg.author.id}`
+        `https://app.duck.community/discord-authenticate/${msg.author.id}`
       )
     })
 
@@ -55,10 +55,10 @@ client.on('message', msg => {
 // RECIEVING
 
 const subscriber = zilliqa.subscriptionBuilder.buildEventLogSubscriptions(
-  'wss://dev-ws.zilliqa.com',
+  'wss://api-ws.zilliqa.com',
   {
     // smart contract address you want to listen on
-    addresses: [nftContract, zilswapContract]
+    addresses: [zilswapContract, nftContract]
   }
 )
 subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
@@ -111,7 +111,9 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
           )
 
           const amountTokensPerDollar = rate.expectedAmount
-          const amountDollarsPerToken = new BigNumber(1).dividedBy(amountTokensPerDollar)
+          const amountDollarsPerToken = new BigNumber(1).dividedBy(
+            amountTokensPerDollar
+          )
 
           const embed = new Discord.MessageEmbed()
             .setColor('#F25B21')
@@ -123,7 +125,10 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
                 0
               )} liquidity`
             )
-            .addField(`${symbol} liquidity`, `${pool.tokenReserve.toFixed()} ${symbol}`)
+            .addField(
+              `${symbol} liquidity`,
+              `${pool.tokenReserve.toFixed()} ${symbol}`
+            )
             .addField('Total supply', `${correctSupply} ${symbol}`)
             .addField(
               '1 usd equals',
@@ -134,8 +139,8 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
               `$${amountDollarsPerToken.toFixed()}`
             )
 
-          const channel = client.channels.cache.get('839540882344771604')
-          channel.send('<@854802219743576065>')
+          const channel = client.channels.cache.get('854803343595536386')
+          channel.send('<@&854802219743576065>')
           channel.send(embed)
         }
       }
@@ -147,7 +152,6 @@ subscriber.start()
 
 client.on('ready', async () => {
   await zilswap.initialize()
-  console.log('ehllo')
   client.user.setPresence({
     game: {
       name: 'Zilliqa Events',
@@ -171,7 +175,7 @@ function isMatch (hash) {
       guildMember.roles.add(role)
 
       client.users.fetch(user, false).then(user => {
-        user.send('Welcome to the Premium Pond :duck::shy_duck:')
+        user.send('Welcome to the Premium Pond :duck:')
       })
 
       usercache.del(user)
