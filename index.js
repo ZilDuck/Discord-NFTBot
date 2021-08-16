@@ -73,6 +73,22 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
           console.log(hash)
           isMatch(hash)
         }
+        }
+        if (eventLog._eventname === 'MintSuccess') {
+          const address = eventLog.params[0].value
+          const by = eventLog.params[1].value
+          const recipient = eventLog.params[2].value
+          const token_id = eventLog.params[3].value
+          const token_url = eventLog.params[4].value
+
+          const embed = new Discord.MessageEmbed()
+            .setColor('#F25B21')
+            .setTitle(`A new duck has been minted! #${token_id}`)
+            .setDescription(`Contract: ${address}`)
+
+          const channel = client.channels.cache.get('862796689323327488')
+          channel.send(embed)
+        }
         if (eventLog._eventname === 'PoolCreated') {
           const address = eventLog.params[0].value
           const contract = zilliqa.contracts.at(address)
@@ -143,7 +159,7 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
               `$${amountDollarsPerToken.toFixed()}`
             )
 
-          const channel = client.channels.cache.get('854803343595536386')
+          const channel = client.channels.cache.get('862796689323327488')
           channel.send('<@&854802219743576065>')
           channel.send(embed)
         }
