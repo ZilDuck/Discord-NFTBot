@@ -60,8 +60,6 @@ module.exports.sendDuckMintMessage = async (duck_id) => {
     .addFields(
       { name: 'Owner', value: `[${duckOwner}](${duckOwnerLink})`},
       { name: 'Rarity', value: `1 in ${Number(oneInChance).toLocaleString()}`},
-
-      { name: '\u200B', value: '\u200B' },
       { name: 'Base', value: `${base} (${baseRarity})`, inline: true  },
       { name: 'Beak', value: `${beak} (${beakRarity})`, inline: true  },
       { name: 'Eyes', value: `${eyes} (${eyesRarity})`, inline: true  },
