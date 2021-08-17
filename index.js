@@ -26,7 +26,7 @@ client.login(process.env.TOKEN)
 //Zil Contracts
 const contractNftContract = process.env.NFT_CONTRACT
 const contractZilswapContract = process.env.ZILSWAP_CONTRACT
-
+const contractProxyContract = process.env.PROXY_CONTRACT
 //Discord Rooms
 const roomThePond = process.env.ROOM_THE_POND
 const roomPremiumPond = process.env.ROOM_PREMIUM_POND
@@ -73,13 +73,15 @@ const subscriber = zilliqa.subscriptionBuilder.buildEventLogSubscriptions(
   'wss://api-ws.zilliqa.com',
   {
     // smart contract address you want to listen on
-    addresses: [contractZilswapContract, contractNftContract]
+    addresses: [contractZilswapContract, contractNftContract, contractProxyContract]
   }
 )
+
 subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
   // do what you want with new event log
-  console.log(JSON.stringify(event))
+  try {
   if (event.value) {
+    console.log('event')
     for (const value of event.value) {
       for (const eventLog of value.event_logs) {
         // Hatzz this doesn't run for two people tryna iterate over it doesnt work event.value.event_logs is not iterable
@@ -92,7 +94,8 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
 
         if (eventLog._eventname === 'MintSuccess') 
         {
-          const token_id = eventLog.params[3].value
+          console.log('duck minted')
+          const token_id = eventLog.params[2].value
           nfdTools.sendDuckMintMessage(token_id)
         }
 
@@ -166,10 +169,14 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
           const channel = client.channels.cache.get(roomPremiumPondBot)
           channel.send('<@&854802219743576065>')
           channel.send(embed)
+        }
       }
     }
   }
+} catch (e) {
+  console.log(e)
 }
+
 })
 
 subscriber.start()
