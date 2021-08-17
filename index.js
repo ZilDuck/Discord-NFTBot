@@ -7,20 +7,37 @@ const bcrypt = require('bcryptjs')
 const { Zilswap } = require('zilswap-sdk')
 const axios = require('axios')
 const BigNumber = require('bignumber.js')
-
 const zilliqa = new Zilliqa('https://api.zilliqa.com/')
 const zilswap = new Zilswap('MainNet')
-
 const usercache = new NodeCache()
-const client = new Client({
-  intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]
-})
 require('dotenv').config()
 
-const nftContract = '0x06f70655d4AA5819E711563EB2383655449f24E9'
-const zilswapContract = '0xba11eb7bcc0a02e947acf03cc651bfaf19c9ec00'
+const nfdTools = require('./nfdTools.js')
 
-// POSTING
+///////////////////////////////////////////////////////////
+
+
+const client = new Client
+({
+  intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]
+})
+client.login(process.env.TOKEN)
+
+//Zil Contracts
+const contractNftContract = process.env.NFT_CONTRACT
+const contractZilswapContract = process.env.ZILSWAP_CONTRACT
+
+//Discord Rooms
+const roomThePond = process.env.ROOM_THE_POND
+const roomPremiumPond = process.env.ROOM_PREMIUM_POND
+const roomPremiumPondBot = process.env.ROOM_PREMIUM_POND_BOT
+
+
+////////////////////////////////////////////////////////////
+//
+// Verify NFT on Discord
+// todo : Remove holders that dont hold
+//
 client.on('message', msg => {
   client.user.setPresence({
     game: {
@@ -29,36 +46,34 @@ client.on('message', msg => {
     },
     status: 'online'
   })
-  // get userID
-  if (msg.content.startsWith('$verify')) {
-    // if this blows up with a null value, then nines said reee
+  if (msg.content.toLowerCase().startsWith('$verify')) 
+  {
+    msg.reply(`I've sent you a DM containing a link to verify the NFD, if you have DM's turned off then just try \`$verify\` again after enabling DM's :duck:`)
 
     client.users.fetch(msg.author.id, false).then(user => {
       user.send(
         `https://app.duck.community/discord-authenticate/${msg.author.id}`
       )
     })
-
     usercache.set(msg.author.id, '', 10000)
     console.log('User : ' + msg.author.id + ' verifying...')
   }
-  // if (msg.content.startsWith("duck bot")){
-  //   client.users.fetch(msg.author.id, false).then((user) => {
-  //     user.send("Quack?");
-  //    });
-  // }
-  if (msg.content.startsWith('quack')) {
+
+  if (msg.content.toLowerCase().startsWith('quack')) 
+  {
     msg.reply('quack')
   }
 })
 
-// RECIEVING
-
+//
+// Listens for TX's on contracts we monitor
+// todo : Remove holders that dont hold
+//
 const subscriber = zilliqa.subscriptionBuilder.buildEventLogSubscriptions(
   'wss://api-ws.zilliqa.com',
   {
     // smart contract address you want to listen on
-    addresses: [zilswapContract, nftContract]
+    addresses: [contractZilswapContract, contractNftContract]
   }
 )
 subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
@@ -72,23 +87,16 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
           const hash = eventLog.params[0].value
           console.log(hash)
           isMatch(hash)
+          
         }
-        }
-        if (eventLog._eventname === 'MintSuccess') {
-          const address = eventLog.params[0].value
-          const by = eventLog.params[1].value
-          const recipient = eventLog.params[2].value
+
+        if (eventLog._eventname === 'MintSuccess') 
+        {
           const token_id = eventLog.params[3].value
-          const token_url = eventLog.params[4].value
-
-          const embed = new Discord.MessageEmbed()
-            .setColor('#F25B21')
-            .setTitle(`A new duck has been minted! #${token_id}`)
-            .setDescription(`Contract: ${address}`)
-
-          const channel = client.channels.cache.get('862796689323327488')
-          channel.send(embed)
+          nfdTools.sendDuckMintMessage(token_id)
         }
+
+
         if (eventLog._eventname === 'PoolCreated') {
           const address = eventLog.params[0].value
           const contract = zilliqa.contracts.at(address)
@@ -101,6 +109,7 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
           const correctSupply = new BigNumber(supply).dividedBy(
             10 ** Number(decimals)
           )
+
           console.log(init)
 
           const zilPrice = (
@@ -118,54 +127,49 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
           console.log(pool)
 
           const zilPoolValue = pool.zilReserve.dividedBy(10 ** 12)
-          const usdPoolValue = zilPoolValue.dividedBy(zilPerUsd)
+          const usdPoolValue = (zilPoolValue.dividedBy(zilPerUsd) * 2)
+          
+          //getting rates at pool
+          const oneZIl = await zilswap.toUnitless('ZIL', '1')
 
+          //tokens per 1 zil
           const rate = zilswap.getRatesForInput(
             '0x0000000000000000000000000000000000000000',
             address,
-            Math.floor(zilPerUsd * 10 ** 12).toString()
+            oneZIl
           )
 
-          const amountTokensPerDollar = rate.expectedAmount
-          const amountDollarsPerToken = new BigNumber(1).dividedBy(
-            amountTokensPerDollar
-          )
+          const amountTokensPerZil = rate.expectedAmount                             //1 zil = 5 feathers
+          const tokenPriceInZil = new BigNumber(1).dividedBy(amountTokensPerZil)     //1 feather = 0.2 zil
+          
+          const tokenPriceInUSD = tokenPriceInZil * zilPrice                         //1 feather = 0.02$
+          const tokensPerDollar = new BigNumber(1).dividedBy(tokenPriceInUSD)        //1 dollar = 50 feathers
 
-          const correctReserve = pool.tokenReserve.dividedBy(
+          const tokenReserve = pool.tokenReserve.dividedBy(
             10 ** Number(decimals)
           )
 
           const embed = new Discord.MessageEmbed()
-            .setColor('#F25B21')
+            .setColor('#E91E63')
             .setTitle(`${name} pool found! - Please Beware of Scam Contracts!!!!!`)
             .setDescription(`Contract: ${address}`)
-            .addField(
-              'Zilliqa liquidity',
-              `${zilPoolValue.toFixed(0)} zil / $${usdPoolValue.toFixed(
-                0
-              )} liquidity`
+            .addFields(
+              { name: 'Liquidity', value: `${zilPoolValue.toFixed(0)} ZIL + ${tokenReserve.toFixed()} ${symbol}` },
+              { name: 'Liquidity', value: `${usdPoolValue.toFixed(0)}$` },
+              { name: '\u200B', value: '\u200B' },
+              { name: 'Total supply', value: `${correctSupply} ${symbol}`, inline: true },
+              { name: '1 usd equals', value: `${tokensPerDollar.toFixed()} ${symbol}`, inline: true },
+              { name: `1 ${symbol} equals`, value: `$${tokenPriceInUSD.toFixed(10)}`, inline: true },
             )
-            .addField(
-              `${symbol} liquidity`,
-              `${correctReserve.toFixed()} ${symbol}`
-            )
-            .addField('Total supply', `${correctSupply} ${symbol}`)
-            .addField(
-              '1 usd equals',
-              `${amountTokensPerDollar.toFixed()} ${symbol}`
-            )
-            .addField(
-              `1 ${symbol} equals`,
-              `$${amountDollarsPerToken.toFixed()}`
-            )
+            .setTimestamp(new Date().toTimeString())
 
-          const channel = client.channels.cache.get('862796689323327488')
+          const channel = client.channels.cache.get(roomPremiumPondBot)
           channel.send('<@&854802219743576065>')
           channel.send(embed)
-        }
       }
     }
   }
+}
 })
 
 subscriber.start()
@@ -181,9 +185,15 @@ client.on('ready', async () => {
   })
 })
 
+////////////////////////////////////////////////////////////
+//
+// matches a users emitted hash against the wallet confirming them
+// todo:monitor the duck address?
+//
+
+
 function isMatch (hash) {
   const mykeys = usercache.keys()
-
   mykeys.forEach(async user => {
     if (bcrypt.compareSync(user, hash)) {
       console.log('User : ' + user + ' is authed')
@@ -204,8 +214,6 @@ function isMatch (hash) {
     }
   })
 }
-
-client.login(process.env.TOKEN)
 
 const getVnameValue = (init, vname) => {
   return init.find(obj => obj.vname === vname).value
