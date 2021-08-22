@@ -1,6 +1,7 @@
 const Discord = require('discord.js')
 const { Client, Intents } = require('discord.js')
 const { Zilliqa } = require('@zilliqa-js/zilliqa')
+const {toBech32Address} = require('@zilliqa-js/crypto');
 const { MessageType } = require('@zilliqa-js/subscriptions')
 const NodeCache = require('node-cache')
 const bcrypt = require('bcryptjs')
@@ -142,7 +143,7 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
             oneZIl
           )
 
-          const amountTokensPerZil = rate.expectedAmount                             //1 zil = 5 feathers
+          const amountTokensPerZil = (rate.expectedAmount).dividedBy(10 ** Number(decimals))                          //1 zil = 5 feathers
           const tokenPriceInZil = new BigNumber(1).dividedBy(amountTokensPerZil)     //1 feather = 0.2 zil
           
           const tokenPriceInUSD = tokenPriceInZil * zilPrice                         //1 feather = 0.02$
@@ -151,24 +152,36 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
           const tokenReserve = pool.tokenReserve.dividedBy(
             10 ** Number(decimals)
           )
+          
 
           const embed = new Discord.MessageEmbed()
             .setColor('#E91E63')
             .setTitle(`${name} pool found! - Please Beware of Scam Contracts!!!!!`)
-            .setDescription(`Contract: ${address}`)
+            .setDescription(`Contract: ${toBech32Address(address)}`)
             .addFields(
-              { name: 'Liquidity', value: `${zilPoolValue.toFixed(0)} ZIL + ${tokenReserve.toFixed()} ${symbol}` },
-              { name: 'Liquidity', value: `${usdPoolValue.toFixed(0)}$` },
+              { name: 'Liquidity', value: `${zilPoolValue.toFixed(0)} ZIL + ${tokenReserve.toFixed()} ${symbol} (${usdPoolValue.toFixed(0)}$)` },
+              { name: 'Total supply', value: `${correctSupply} ${symbol}` },
               { name: '\u200B', value: '\u200B' },
-              { name: 'Total supply', value: `${correctSupply} ${symbol}`, inline: true },
-              { name: '1 usd equals', value: `${tokensPerDollar.toFixed()} ${symbol}`, inline: true },
-              { name: `1 ${symbol} equals`, value: `$${tokenPriceInUSD.toFixed(10)}`, inline: true },
+              //zil values
+              { name: '1 ZIL =', value: `${amountTokensPerZil.toFixed(2)} ${symbol}`, inline: true },
+              { name: `1 ${symbol} =`, value: `${tokenPriceInZil.toFixed(2)} ZIL`, inline: true },
+              //usd values
+              { name: '1 $ =', value: `${tokensPerDollar.toFixed(2)} ${symbol}`, inline: true },
+              { name: `1 ${symbol} =`, value: `${tokenPriceInUSD.toFixed(2)}$`, inline: true },
             )
             .setTimestamp(new Date().toTimeString())
 
           const channel = client.channels.cache.get(roomPremiumPondBot)
           channel.send('<@&854802219743576065>')
           channel.send(embed)
+          
+          const warningEmbed = new Discord.MessageEmbed()
+            .setColor('#E91E63')
+            .setTitle(`${name} has low liquidity, be extra cautious`)
+
+          if (zilPoolValue < 2000) {
+            channel.send(warningEmbed)
+          }
         }
       }
     }

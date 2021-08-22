@@ -69,8 +69,8 @@ module.exports.sendDuckMintMessage = async (duck_id) => {
     //Number(oneinchance).toLocaleString()
     .setImage(duckURI)
       
-  const channel = client.channels.cache.get(roomThePond)
-  channel.send(embed)
+  const thePond = client.channels.cache.get(roomThePond)
+  channel.send(thePond)
 }
 
 fetchMetadataFromID = async (id) => {
