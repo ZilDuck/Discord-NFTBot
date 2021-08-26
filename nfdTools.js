@@ -120,7 +120,7 @@ module.exports.sendDuckMintMessage = async (duck_id) => {
     .setImage(duckURI)
       
   const thePond = client.channels.cache.get(roomThePond)
-  channel.send(thePond)
+  thePond.send(embed)
 }
 
 fetchMetadataFromID = async (id) => {
