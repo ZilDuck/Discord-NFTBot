@@ -62,8 +62,23 @@ client.on('message', msg => {
 
   if (msg.content.toLowerCase().startsWith('quack')) 
   {
-    msg.reply('quack')
+    msg.reply('le quack')
   }
+
+  if (msg.content.toLowerCase().startsWith('$show')) 
+  {
+    const number = msg.content.split(" ")[1];
+    if (number !== '' && parseInt(number) > 0 && parseInt(number) <= 8192) {
+      queryDuck(number, msg)
+    } else if (parseInt(number) < 0 && parseInt(number) > 8192){
+      msg.reply('Duck doesnt exist')
+    } else {
+      msg.reply('Not a number quaaaaack')
+    }
+    
+    
+  }
+
 })
 
 //
@@ -211,6 +226,10 @@ client.on('ready', async () => {
 // todo:monitor the duck address?
 //
 
+async function queryDuck(duck_id, msg){
+    const lookupEmbed = await nfdTools.sendDuckLookupMessage(duck_id)
+    msg.reply(lookupEmbed)
+}
 
 function isMatch (hash) {
   const mykeys = usercache.keys()

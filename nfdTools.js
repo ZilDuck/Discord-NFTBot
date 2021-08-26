@@ -22,6 +22,56 @@ const roomThePond = process.env.ROOM_THE_POND
 const contractProxyContract = process.env.PROXY_CONTRACT
 /////////////////////////////////////////////////
 
+module.exports.sendDuckLookupMessage = async (duck_id) => {
+  const metadata = await fetchMetadataFromID(String(duck_id))
+
+  const base = getDisplayString('bases', metadata.duck_base_name)
+  const beak = getDisplayString('beaks', metadata.duck_beak_name)
+  const eyes = getDisplayString('eyes', metadata.duck_eyes_name)
+  const hats = getDisplayString('hats', metadata.duck_hats_name)
+  const outfit = getDisplayString('outfits', metadata.duck_outfit_name)
+
+  const baseRarity = metadata.duck_base_occurrence_chance
+  const beakRarity = metadata.duck_beak_occurrence_chance
+  const eyesRarity = metadata.duck_eyes_occurrence_chance
+  const hatsRarity = metadata.duck_hats_occurrence_chance
+  const outfitRarity = metadata.duck_outfit_occurrence_chance
+
+  const oneInChance = (1 / (baseRarity.split("%")[0] / 100 * 
+                            beakRarity.split("%")[0] / 100 * 
+                            eyesRarity.split("%")[0] / 100 * 
+                            hatsRarity.split("%")[0] / 100 * 
+                            outfitRarity.split("%")[0] / 100)
+                      ).toFixed()
+  const duckName = (await getNFTSubstate('duck_name_map'))[duck_id]
+  const duckURI  =(await getNFTSubstate('token_uris'))[duck_id]
+  const duckOwner = toBech32Address((await getNFTSubstate('token_owners'))[duck_id])
+  const duckOwnerLink = `https://viewblock.io/zilliqa/address/${duckOwner}`
+
+  
+  const duckPriceResponse = (await zilliqa.blockchain
+      .getSmartContractSubState(contractProxyContract, 'duck_price_zils'))
+  const mintPrice = (duckPriceResponse['result']['duck_price_zils'] / 10 ** 12).toFixed(2)
+  
+  const embed = new Discord.MessageEmbed()
+    .setColor('#0099ff')
+    .setTitle(`#${duck_id} ${duckName}`)
+    .setDescription(`Lookup for duck ${duck_id}`)
+    .addFields(
+      { name: 'Owner', value: `[${duckOwner}](${duckOwnerLink})`},
+      { name: 'Rarity', value: `1 in ${Number(oneInChance).toLocaleString()}`},
+      { name: 'Base', value: `${base} (${baseRarity})`, inline: true  },
+      { name: 'Beak', value: `${beak} (${beakRarity})`, inline: true  },
+      { name: 'Eyes', value: `${eyes} (${eyesRarity})`, inline: true  },
+      { name: 'Hat', value: `${hats} (${hatsRarity})`, inline: true  },
+      { name: 'Outfit', value: `${outfit} (${outfitRarity})`, inline: true  },
+    )
+    //Number(oneinchance).toLocaleString()
+    .setImage(duckURI)
+      
+  return embed
+}
+
 module.exports.sendDuckMintMessage = async (duck_id) => {
   const metadata = await fetchMetadataFromID(String(duck_id))
 
