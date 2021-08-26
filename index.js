@@ -1,7 +1,7 @@
 const Discord = require('discord.js')
 const { Client, Intents } = require('discord.js')
 const { Zilliqa } = require('@zilliqa-js/zilliqa')
-const {toBech32Address} = require('@zilliqa-js/crypto');
+const { toBech32Address } = require('@zilliqa-js/crypto');
 const { MessageType } = require('@zilliqa-js/subscriptions')
 const NodeCache = require('node-cache')
 const bcrypt = require('bcryptjs')
@@ -19,9 +19,9 @@ const nfdTools = require('./nfdTools.js')
 
 
 const client = new Client
-({
-  intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]
-})
+  ({
+    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]
+  })
 client.login(process.env.TOKEN)
 
 //Zil Contracts
@@ -47,8 +47,7 @@ client.on('message', msg => {
     },
     status: 'online'
   })
-  if (msg.content.toLowerCase().startsWith('$verify')) 
-  {
+  if (msg.content.toLowerCase().startsWith('$verify')) {
     msg.reply(`I've sent you a DM containing a link to verify the NFD, if you have DM's turned off then just try \`$verify\` again after enabling DM's :duck:`)
 
     client.users.fetch(msg.author.id, false).then(user => {
@@ -60,25 +59,21 @@ client.on('message', msg => {
     console.log('User : ' + msg.author.id + ' verifying...')
   }
 
-  if (msg.content.toLowerCase().startsWith('quack')) 
-  {
+  if (msg.content.toLowerCase().startsWith('quack')) {
     msg.reply('le quack')
   }
 
-  if (msg.content.toLowerCase().startsWith('$show')) 
-  {
+  if (msg.content.toLowerCase().startsWith('$show')) {
+    
     const number = msg.content.split(" ")[1];
     if (number !== '' && parseInt(number) > 0 && parseInt(number) <= 8192) {
       queryDuck(number, msg)
-    } else if (parseInt(number) < 0 && parseInt(number) > 8192){
+    } else if (parseInt(number) < 0 && parseInt(number) > 8192) {
       msg.reply('Duck doesnt exist')
     } else {
       msg.reply('Not a number quaaaaack')
     }
-    
-    
   }
-
 })
 
 //
@@ -96,114 +91,113 @@ const subscriber = zilliqa.subscriptionBuilder.buildEventLogSubscriptions(
 subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
   // do what you want with new event log
   try {
-  if (event.value) {
-    console.log('event')
-    for (const value of event.value) {
-      for (const eventLog of value.event_logs) {
-        // Hatzz this doesn't run for two people tryna iterate over it doesnt work event.value.event_logs is not iterable
-        if (eventLog._eventname === 'UserHasDucksHashMessage') {
-          const hash = eventLog.params[0].value
-          console.log(hash)
-          isMatch(hash)
-          
-        }
+    if (event.value) {
+      console.log('event')
+      for (const value of event.value) {
+        for (const eventLog of value.event_logs) {
+          // Hatzz this doesn't run for two people tryna iterate over it doesnt work event.value.event_logs is not iterable
+          if (eventLog._eventname === 'UserHasDucksHashMessage') {
+            const hash = eventLog.params[0].value
+            console.log(hash)
+            isMatch(hash)
 
-        if (eventLog._eventname === 'MintSuccess') 
-        {
-          console.log('duck minted')
-          const token_id = eventLog.params[2].value
-          nfdTools.sendDuckMintMessage(token_id)
-        }
+          }
+
+          if (eventLog._eventname === 'MintSuccess') {
+            console.log('duck minted')
+            const token_id = eventLog.params[2].value
+            nfdTools.sendDuckMintMessage(token_id)
+          }
 
 
-        if (eventLog._eventname === 'PoolCreated') {
-          const address = eventLog.params[0].value
-          const contract = zilliqa.contracts.at(address)
+          if (eventLog._eventname === 'PoolCreated') {
+            const address = eventLog.params[0].value
+            const contract = zilliqa.contracts.at(address)
 
-          const init = await contract.getInit()
-          const name = getVnameValue(init, 'name')
-          const symbol = getVnameValue(init, 'symbol')
-          const supply = getVnameValue(init, 'init_supply')
-          const decimals = getVnameValue(init, 'decimals')
-          const correctSupply = new BigNumber(supply).dividedBy(
-            10 ** Number(decimals)
-          )
-
-          console.log(init)
-
-          const zilPrice = (
-            await axios.get(
-              'https://api.coingecko.com/api/v3/simple/price?ids=zilliqa&vs_currencies=usd'
+            const init = await contract.getInit()
+            const name = getVnameValue(init, 'name')
+            const symbol = getVnameValue(init, 'symbol')
+            const supply = getVnameValue(init, 'init_supply')
+            const decimals = getVnameValue(init, 'decimals')
+            const correctSupply = new BigNumber(supply).dividedBy(
+              10 ** Number(decimals)
             )
-          ).data.zilliqa.usd
 
-          const zilPerUsd = 1 / zilPrice
+            console.log(init)
 
-          console.log(address)
+            const zilPrice = (
+              await axios.get(
+                'https://api.coingecko.com/api/v3/simple/price?ids=zilliqa&vs_currencies=usd'
+              )
+            ).data.zilliqa.usd
 
-          const pool = await fetchPool(zilswap, address)
+            const zilPerUsd = 1 / zilPrice
 
-          console.log(pool)
+            console.log(address)
 
-          const zilPoolValue = pool.zilReserve.dividedBy(10 ** 12)
-          const usdPoolValue = (zilPoolValue.dividedBy(zilPerUsd) * 2)
-          
-          //getting rates at pool
-          const oneZIl = await zilswap.toUnitless('ZIL', '1')
+            const pool = await fetchPool(zilswap, address)
 
-          //tokens per 1 zil
-          const rate = zilswap.getRatesForInput(
-            '0x0000000000000000000000000000000000000000',
-            address,
-            oneZIl
-          )
+            console.log(pool)
 
-          const amountTokensPerZil = (rate.expectedAmount).dividedBy(10 ** Number(decimals))                          //1 zil = 5 feathers
-          const tokenPriceInZil = new BigNumber(1).dividedBy(amountTokensPerZil)     //1 feather = 0.2 zil
-          
-          const tokenPriceInUSD = tokenPriceInZil * zilPrice                         //1 feather = 0.02$
-          const tokensPerDollar = new BigNumber(1).dividedBy(tokenPriceInUSD)        //1 dollar = 50 feathers
+            const zilPoolValue = pool.zilReserve.dividedBy(10 ** 12)
+            const usdPoolValue = (zilPoolValue.dividedBy(zilPerUsd) * 2)
 
-          const tokenReserve = pool.tokenReserve.dividedBy(
-            10 ** Number(decimals)
-          )
-          
+            //getting rates at pool
+            const oneZIl = await zilswap.toUnitless('ZIL', '1')
 
-          const embed = new Discord.MessageEmbed()
-            .setColor('#E91E63')
-            .setTitle(`${name} pool found! - Please Beware of Scam Contracts!!!!!`)
-            .setDescription(`Contract: ${toBech32Address(address)}`)
-            .addFields(
-              { name: 'Liquidity', value: `${zilPoolValue.toFixed(0)} ZIL + ${tokenReserve.toFixed()} ${symbol} (${usdPoolValue.toFixed(0)}$)` },
-              { name: 'Total supply', value: `${correctSupply} ${symbol}` },
-              { name: '\u200B', value: '\u200B' },
-              //zil values
-              { name: '1 ZIL =', value: `${amountTokensPerZil.toFixed(2)} ${symbol}`, inline: true },
-              { name: `1 ${symbol} =`, value: `${tokenPriceInZil.toFixed(2)} ZIL`, inline: true },
-              //usd values
-              { name: '1 $ =', value: `${tokensPerDollar.toFixed(2)} ${symbol}`, inline: true },
-              { name: `1 ${symbol} =`, value: `${tokenPriceInUSD.toFixed(2)}$`, inline: true },
+            //tokens per 1 zil
+            const rate = zilswap.getRatesForInput(
+              '0x0000000000000000000000000000000000000000',
+              address,
+              oneZIl
             )
-            .setTimestamp(new Date().toTimeString())
 
-          const channel = client.channels.cache.get(roomPremiumPondBot)
-          channel.send('<@&854802219743576065>')
-          channel.send(embed)
-          
-          const warningEmbed = new Discord.MessageEmbed()
-            .setColor('#E91E63')
-            .setTitle(`${name} has low liquidity, be extra cautious`)
+            const amountTokensPerZil = (rate.expectedAmount).dividedBy(10 ** Number(decimals))                          //1 zil = 5 feathers
+            const tokenPriceInZil = new BigNumber(1).dividedBy(amountTokensPerZil)     //1 feather = 0.2 zil
 
-          if (zilPoolValue < 2000) {
-            channel.send(warningEmbed)
+            const tokenPriceInUSD = tokenPriceInZil * zilPrice                         //1 feather = 0.02$
+            const tokensPerDollar = new BigNumber(1).dividedBy(tokenPriceInUSD)        //1 dollar = 50 feathers
+
+            const tokenReserve = pool.tokenReserve.dividedBy(
+              10 ** Number(decimals)
+            )
+
+
+            const embed = new Discord.MessageEmbed()
+              .setColor('#E91E63')
+              .setTitle(`${name} pool found! - Please Beware of Scam Contracts!!!!!`)
+              .setDescription(`Contract: ${toBech32Address(address)}`)
+              .addFields(
+                { name: 'Liquidity', value: `${zilPoolValue.toFixed(0)} ZIL + ${tokenReserve.toFixed()} ${symbol} (${usdPoolValue.toFixed(0)}$)` },
+                { name: 'Total supply', value: `${correctSupply} ${symbol}` },
+                { name: '\u200B', value: '\u200B' },
+                //zil values
+                { name: '1 ZIL =', value: `${amountTokensPerZil.toFixed(2)} ${symbol}`, inline: true },
+                { name: `1 ${symbol} =`, value: `${tokenPriceInZil.toFixed(2)} ZIL`, inline: true },
+                //usd values
+                { name: '1 $ =', value: `${tokensPerDollar.toFixed(2)} ${symbol}`, inline: true },
+                { name: `1 ${symbol} =`, value: `${tokenPriceInUSD.toFixed(2)}$`, inline: true },
+              )
+              .setTimestamp(new Date().toTimeString())
+
+            const channel = client.channels.cache.get(roomPremiumPondBot)
+            channel.send('<@&854802219743576065>')
+            channel.send(embed)
+
+            const warningEmbed = new Discord.MessageEmbed()
+              .setColor('#E91E63')
+              .setTitle(`${name} has low liquidity, be extra cautious`)
+
+            if (zilPoolValue < 2000) {
+              channel.send(warningEmbed)
+            }
           }
         }
       }
     }
+  } catch (e) {
+    console.log(e)
   }
-} catch (e) {
-  console.log(e)
-}
 
 })
 
@@ -226,12 +220,17 @@ client.on('ready', async () => {
 // todo:monitor the duck address?
 //
 
-async function queryDuck(duck_id, msg){
-    const lookupEmbed = await nfdTools.sendDuckLookupMessage(duck_id)
-    msg.reply(lookupEmbed)
+async function queryDuck(duck_id, msg) {
+  const currentDuck = (await zilliqa.blockchain.getSmartContractSubState(contractProxyContract, 'current_duck_count'))['result']['current_duck_count']
+  console.log(currentDuck)
+  if (duck_id > parseInt(currentDuck)) {
+    msg.reply('Duck doesn\'t exist yet :)')
+  }
+  const lookupEmbed = await nfdTools.sendDuckLookupMessage(duck_id)
+  msg.reply(lookupEmbed)
 }
 
-function isMatch (hash) {
+function isMatch(hash) {
   const mykeys = usercache.keys()
   mykeys.forEach(async user => {
     if (bcrypt.compareSync(user, hash)) {
