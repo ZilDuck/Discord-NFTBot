@@ -25,18 +25,16 @@ const contractProxyContract = process.env.PROXY_CONTRACT
 module.exports.sendHighscores = async () => {
 
   const leaderboard = (await zilliqa.blockchain.getSmartContractSubState(contractNftContract, 'owned_token_count'))['result']['owned_token_count']
-  console.log(leaderboard)
 
   const reducedSortedLeaderboard = Object.fromEntries(
     Object.entries(leaderboard).sort(([,a],[,b]) => b-a).slice(0,15)
   )
-  
-  console.log(reducedSortedLeaderboard)
-  const embedString = reducedSortedLeaderboard.map(x => `${Object.entries(x).join(' : ')} `).join('\n')
 
+  const embedTable = Object.entries(reducedSortedLeaderboard).map(x => `${toBech32Address(x[0])} : ${x[1]} `).join('\n')
+  const embedString = `\`\`\`${embedTable}\`\`\``
   const embed = new Discord.MessageEmbed()
     .setColor('#f54263')
-    .setTitle(`Leaderboard - Top 15 NFD Holders`)
+    .setTitle('Leaderboard - Top 15 NFD Holders')
     .setDescription(embedString)
 
   return embed
