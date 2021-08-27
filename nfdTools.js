@@ -22,6 +22,27 @@ const roomThePond = process.env.ROOM_THE_POND
 const contractProxyContract = process.env.PROXY_CONTRACT
 /////////////////////////////////////////////////
 
+module.exports.sendHighscores = async () => {
+
+  const leaderboard = (await zilliqa.blockchain.getSmartContractSubState(contractNftContract, 'owned_token_count'))['result']['owned_token_count']
+  console.log(leaderboard)
+
+  const reducedSortedLeaderboard = Object.fromEntries(
+    Object.entries(leaderboard).sort(([,a],[,b]) => b-a).slice(0,15)
+  )
+  
+  console.log(reducedSortedLeaderboard)
+  const embedString = reducedSortedLeaderboard.map(x => `${Object.entries(x).join(' : ')} `).join('\n')
+
+  const embed = new Discord.MessageEmbed()
+    .setColor('#f54263')
+    .setTitle(`Leaderboard - Top 15 NFD Holders`)
+    .setDescription(embedString)
+
+  return embed
+}
+//  Object.fromEntries(...).slice 
+
 module.exports.sendDuckLookupMessage = async (duck_id) => {
   const metadata = await fetchMetadataFromID(String(duck_id))
 

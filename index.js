@@ -13,7 +13,8 @@ const zilswap = new Zilswap('MainNet')
 const usercache = new NodeCache()
 require('dotenv').config()
 
-const nfdTools = require('./nfdTools.js')
+const nfdTools = require('./nfdTools.js');
+const { Z_FULL_FLUSH } = require('zlib');
 
 ///////////////////////////////////////////////////////////
 
@@ -61,6 +62,10 @@ client.on('message', msg => {
 
   if (msg.content.toLowerCase().startsWith('quack')) {
     msg.reply('le quack')
+  }
+
+  if (msg.content.toLowerCase().startsWith('$leaderboard')) {
+    queryLeaderboard(msg);
   }
 
   if (msg.content.toLowerCase().startsWith('$show')) {
@@ -219,6 +224,12 @@ client.on('ready', async () => {
 // matches a users emitted hash against the wallet confirming them
 // todo:monitor the duck address?
 //
+
+async function queryLeaderboard(msg) {
+  const embed = await nfdTools.sendHighscores();
+  msg.reply(embed)
+}
+
 
 async function queryDuck(duck_id, msg) {
   const currentDuck = (await zilliqa.blockchain.getSmartContractSubState(contractProxyContract, 'current_duck_count'))['result']['current_duck_count']
