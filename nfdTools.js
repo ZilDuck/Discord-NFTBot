@@ -22,12 +22,12 @@ const roomThePond = process.env.ROOM_THE_POND
 const contractProxyContract = process.env.PROXY_CONTRACT
 /////////////////////////////////////////////////
 
-module.exports.sendHighscores = async () => {
+module.exports.sendHighscores = async (number) => {
 
   const leaderboard = (await zilliqa.blockchain.getSmartContractSubState(contractNftContract, 'owned_token_count'))['result']['owned_token_count']
 
   const reducedSortedLeaderboard = Object.fromEntries(
-    Object.entries(leaderboard).sort(([,a],[,b]) => b-a).slice(0,15)
+    Object.entries(leaderboard).sort(([,a],[,b]) => b-a).slice(0,number)
   )
 
   const embedTable = Object.entries(reducedSortedLeaderboard).map(x => `${toBech32Address(x[0])} : ${x[1]} `).join('\n')

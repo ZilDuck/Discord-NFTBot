@@ -65,7 +65,14 @@ client.on('message', msg => {
   }
 
   if (msg.content.toLowerCase().startsWith('$leaderboard')) {
-    queryLeaderboard(msg);
+    const number = msg.content.split(" ")[1];
+    if (number !== '' && parseInt(number) > 0 && parseInt(number) <= 50) {
+    queryLeaderboard(msg, number);
+  } 
+  else
+  {
+    queryLeaderboard(msg, 25);
+  }
   }
 
   if (msg.content.toLowerCase().startsWith('$show')) {
@@ -225,8 +232,8 @@ client.on('ready', async () => {
 // todo:monitor the duck address?
 //
 
-async function queryLeaderboard(msg) {
-  const embed = await nfdTools.sendHighscores();
+async function queryLeaderboard(msg, number) {
+  const embed = await nfdTools.sendHighscores(number);
   msg.reply(embed)
 }
 
