@@ -22,6 +22,20 @@ const roomThePond = process.env.ROOM_THE_POND
 const contractProxyContract = process.env.PROXY_CONTRACT
 /////////////////////////////////////////////////
 
+module.exports.sendUniqueHolders = async () => {
+
+  const leaderboard = (await zilliqa.blockchain.getSmartContractSubState(contractNftContract, 'owned_token_count'))['result']['owned_token_count']
+
+  const uniqueNotZeroHolders = Object.entries(leaderboard).filter(x => x.value != "0")
+
+  const embed = new Discord.MessageEmbed()
+    .setColor('#f54263')
+    .setTitle(`Unique wallets containing 1 NFD - ${uniqueNotZeroHolders.length}`)
+
+  return embed
+}
+
+
 module.exports.sendHighscores = async (number) => {
 
   const leaderboard = (await zilliqa.blockchain.getSmartContractSubState(contractNftContract, 'owned_token_count'))['result']['owned_token_count']
@@ -34,7 +48,7 @@ module.exports.sendHighscores = async (number) => {
   const embedString = `\`\`\`${embedTable}\`\`\``
   const embed = new Discord.MessageEmbed()
     .setColor('#f54263')
-    .setTitle('Leaderboard - Top 15 NFD Holders')
+    .setTitle(`Leaderboard - Top ${number} NFD Holders`)
     .setDescription(embedString)
 
   return embed

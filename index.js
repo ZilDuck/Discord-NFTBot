@@ -64,6 +64,11 @@ client.on('message', msg => {
     msg.reply('le quack')
   }
 
+  
+  if (msg.content.toLowerCase().startsWith('$unique')) {
+    queryUniqueHolders(msg);
+  }
+
   if (msg.content.toLowerCase().startsWith('$leaderboard')) {
     const number = msg.content.split(" ")[1];
     if (number !== '' && parseInt(number) > 0 && parseInt(number) <= 50) {
@@ -71,6 +76,7 @@ client.on('message', msg => {
   } 
   else
   {
+    msg.reply(`quack, here's 25 instead`)
     queryLeaderboard(msg, 25);
   }
   }
@@ -234,6 +240,11 @@ client.on('ready', async () => {
 
 async function queryLeaderboard(msg, number) {
   const embed = await nfdTools.sendHighscores(number);
+  msg.reply(embed)
+}
+
+async function queryUniqueHolders(msg) {
+  const embed = await nfdTools.sendUniqueHolders();
   msg.reply(embed)
 }
 
