@@ -26,7 +26,7 @@ module.exports.sendUniqueHolders = async () => {
 
   const leaderboard = (await zilliqa.blockchain.getSmartContractSubState(contractNftContract, 'owned_token_count'))['result']['owned_token_count']
 
-  const uniqueNotZeroHolders = Object.entries(leaderboard).filter(x => x.value != "0")
+  const uniqueNotZeroHolders = Object.entries(leaderboard).filter(x => x[1] != "0")
 
   const embed = new Discord.MessageEmbed()
     .setColor('#f54263')
