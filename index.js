@@ -49,8 +49,9 @@ client.on('message', msg => {
     status: 'online'
   })
   if (msg.content.toLowerCase().startsWith('$verify')) {
-    msg.reply(`I've sent you a DM containing a link to verify the NFD, if you have DM's turned off then just try \`$verify\` again after enabling DM's :duck:`)
+    msg.reply(`Verifications are temporarily disabled while we work on the ZRC6 migration`)
 
+    /** 
     client.users.fetch(msg.author.id, false).then(user => {
       user.send(
         `https://app.duck.community/discord-authenticate/${msg.author.id}`
@@ -58,39 +59,7 @@ client.on('message', msg => {
     })
     usercache.set(msg.author.id, '', 10000)
     console.log('User : ' + msg.author.id + ' verifying...')
-  }
-
-  if (msg.content.toLowerCase().startsWith('quack')) {
-    msg.reply('le quack')
-  }
-
-  
-  if (msg.content.toLowerCase().startsWith('$unique')) {
-    queryUniqueHolders(msg);
-  }
-
-  if (msg.content.toLowerCase().startsWith('$leaderboard')) {
-    const number = msg.content.split(" ")[1];
-    if (number !== '' && parseInt(number) > 0 && parseInt(number) <= 50) {
-    queryLeaderboard(msg, number);
-  } 
-  else
-  {
-    msg.reply(`quack, here's 25 instead`)
-    queryLeaderboard(msg, 25);
-  }
-  }
-
-  if (msg.content.toLowerCase().startsWith('$show')) {
-    
-    const number = msg.content.split(" ")[1];
-    if (number !== '' && parseInt(number) > 0 && parseInt(number) <= 8192) {
-      queryDuck(number, msg)
-    } else if (parseInt(number) < 0 && parseInt(number) > 8192) {
-      msg.reply('Duck doesnt exist')
-    } else {
-      msg.reply('Not a number quaaaaack')
-    }
+    */
   }
 })
 
@@ -118,15 +87,7 @@ subscriber.emitter.on(MessageType.EVENT_LOG, async event => {
             const hash = eventLog.params[0].value
             console.log(hash)
             isMatch(hash)
-
           }
-
-          if (eventLog._eventname === 'MintSuccess') {
-            console.log('duck minted')
-            const token_id = eventLog.params[2].value
-            nfdTools.sendDuckMintMessage(token_id)
-          }
-
 
           if (eventLog._eventname === 'PoolCreated') {
             const address = eventLog.params[0].value
@@ -238,26 +199,7 @@ client.on('ready', async () => {
 // todo:monitor the duck address?
 //
 
-async function queryLeaderboard(msg, number) {
-  const embed = await nfdTools.sendHighscores(number);
-  msg.reply(embed)
-}
 
-async function queryUniqueHolders(msg) {
-  const embed = await nfdTools.sendUniqueHolders();
-  msg.reply(embed)
-}
-
-
-async function queryDuck(duck_id, msg) {
-  const currentDuck = (await zilliqa.blockchain.getSmartContractSubState(contractProxyContract, 'current_duck_count'))['result']['current_duck_count']
-  console.log(currentDuck)
-  if (duck_id > parseInt(currentDuck)) {
-    msg.reply('Duck doesn\'t exist yet :)')
-  }
-  const lookupEmbed = await nfdTools.sendDuckLookupMessage(duck_id)
-  msg.reply(lookupEmbed)
-}
 
 function isMatch(hash) {
   const mykeys = usercache.keys()
